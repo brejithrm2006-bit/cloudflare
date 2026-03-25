@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudFest – Event Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:#f5f7fb;
+  color:#111827;
+  min-height:100vh;
+}
+header{
+  background:#ffffff;
+  border-bottom:1px solid #dde3f5;
+  padding:0.7rem 1.5rem;
+}
+.header-inner{
+  max-width:1100px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.brand{
+  font-weight:600;
+  color:#0b5ed7;
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+  font-size:0.9rem;
+}
+.user-area{
+  display:flex;
+  gap:0.8rem;
+  align-items:center;
+  font-size:0.85rem;
+  color:#4b5563;
+}
+.badge{
+  padding:0.15rem 0.6rem;
+  border-radius:999px;
+  background:#e5efff;
+  color:#1d4ed8;
+  font-size:0.75rem;
+}
+.btn-ghost{
+  border-radius:999px;
+  border:1px solid #cbd5f0;
+  padding:0.25rem 0.8rem;
+  background:#ffffff;
+  cursor:pointer;
+  font-size:0.8rem;
+}
+.btn-ghost:hover{background:#f3f4ff;}
+
+main{
+  max-width:1100px;
+  margin:0 auto;
+  padding:1.5rem;
+}
+h1{
+  font-size:1.5rem;
+  margin-bottom:0.5rem;
+}
+.subtitle{
+  font-size:0.92rem;
+  color:#6b7280;
+  margin-bottom:1.5rem;
+}
+.layout{
+  display:grid;
+  grid-template-columns:minmax(0,2fr) minmax(0,1.3fr);
+  gap:1.5rem;
+}
+.events-list, .details-panel{
+  background:#ffffff;
+  border-radius:18px;
+  border:1px solid #dde3f5;
+  padding:1.2rem 1.3rem;
+  box-shadow:0 16px 34px rgba(15,35,65,0.06);
+}
+.events-list h2, .details-panel h2{
+  font-size:1rem;
+  margin-bottom:0.75rem;
+}
+.event-item{
+  border-radius:12px;
+  border:1px solid #e5e7f5;
+  padding:0.7rem 0.8rem;
+  margin-bottom:0.7rem;
+  cursor:pointer;
+  transition:background 0.2s,border-color 0.2s;
+}
+.event-item:hover{
+  background:#f3f6ff;
+  border-color:#bfd2ff;
+}
+.event-title{
+  font-size:0.95rem;
+  font-weight:600;
+  color:#111827;
+}
+.event-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.5rem;
+  margin-top:0.15rem;
+  font-size:0.8rem;
+  color:#6b7280;
+}
+.chip{
+  padding:0.1rem 0.5rem;
+  border-radius:999px;
+  background:#eef2ff;
+  color:#1d4ed8;
+}
+.details-body{
+  font-size:0.9rem;
+  color:#4b5563;
+}
+.details-body h3{
+  font-size:0.95rem;
+  margin-top:0.6rem;
+  margin-bottom:0.25rem;
+}
+.details-body ul{
+  padding-left:1.1rem;
+  margin-top:0.25rem;
+}
+.details-body li{
+  margin-bottom:0.18rem;
+}
+.btn-apply{
+  margin-top:0.9rem;
+  border:none;
+  padding:0.55rem 1.2rem;
+  border-radius:999px;
+  background:linear-gradient(90deg,#0b5ed7,#63a0ff);
+  color:#ffffff;
+  font-size:0.85rem;
+  font-weight:600;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.btn-apply:hover{filter:brightness(1.05);}
+.alert{
+  font-size:0.8rem;
+  margin-top:0.6rem;
+}
+.alert-success{color:#166534;}
+.alert-error{color:#b91c1c;}
+.small-heading{
+  font-size:0.85rem;
+  font-weight:600;
+  color:#4b5563;
+  margin-bottom:0.35rem;
+}
+.applications-list{
+  font-size:0.85rem;
+  color:#4b5563;
+}
+.applications-list li{margin-bottom:0.2rem;}
+
+@media(max-width:768px){
+  .layout{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">CloudFest · Dashboard</div>
+    <div class="user-area">
+      <span id="userName"></span>
+      <span class="badge">Student</span>
+      <button class="btn-ghost" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <h1>Event Dashboard</h1>
+  <p class="subtitle">
+    Browse events, read their brochures and procedures, and apply directly from this dashboard.
+  </p>
+
+  <div class="layout">
+    <section class="events-list">
+      <h2>Available Events</h2>
+      <div id="eventsContainer">
+        <!-- Filled via JS -->
+      </div>
+    </section>
+
+    <section class="details-panel">
+      <h2>Event Details</h2>
+      <div id="detailsBody" class="details-body">
+        <p>Select an event from the list to view its full brochure.</p>
+      </div>
+      <div id="applyAlert" class="alert"></div>
+      <div style="margin-top:1.2rem;">
+        <div class="small-heading">My Applications</div>
+        <ul id="myApplications" class="applications-list"></ul>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+// ---------- tiny JS "DB" (events + applications) using localStorage ----------
+const EVENTS = [
+  {
+    id: 101,
+    title: "AI Hackathon 2026",
+    category: "Technology",
+    prizePool: "₹50,000",
+    deadline: "2026-04-20",
+    summary: "24-hour AI-focused hackathon for innovative solutions.",
+    details: "Teams of 3–4. On-site at college lab. Problem statements released at event start. Judging based on innovation, impact, and feasibility.",
+    procedures: [
+      "Register as an individual or team.",
+      "Submit team details before the deadline.",
+      "Pitch and demo at the end of the hackathon."
+    ]
+  },
+  {
+    id: 102,
+    title: "Business Plan Challenge",
+    category: "Management",
+    prizePool: "₹30,000",
+    deadline: "2026-05-05",
+    summary: "Pitch your startup idea to a panel of industry experts.",
+    details: "Open to all branches. 10-page business plan + 5-minute pitch. Shortlisting based on innovation and market potential.",
+    procedures: [
+      "Register and choose a domain.",
+      "Submit executive summary online.",
+      "Final presentation for shortlisted teams."
+    ]
+  },
+  {
+    id: 103,
+    title: "Coding Sprint",
+    category: "Programming",
+    prizePool: "₹20,000",
+    deadline: "2026-04-15",
+    summary: "Competitive programming contest with multiple problem levels.",
+    details: "Individual event. 3 rounds: MCQ, coding, and debugging. Conducted online with proctoring.",
+    procedures: [
+      "Create an account and verify email.",
+      "Attempt qualifier MCQ round.",
+      "Top scorers invited for live coding round."
+    ]
+  }
+];
+
+// applications: [{username, eventId, appliedAt}]
+function getApplications() {
+  return JSON.parse(localStorage.getItem('cf_applications') || '[]');
+}
+function saveApplications(apps) {
+  localStorage.setItem('cf_applications', JSON.stringify(apps));
+}
+function getLoggedInUser() {
+  const u = localStorage.getItem('cf_loggedInUser');
+  return u ? JSON.parse(u) : null;
+}
+
+let currentEventId = null;
+let currentUser = null;
+
+function ensureAuthenticated() {
+  currentUser = getLoggedInUser();
+  if (!currentUser) {
+    window.location.href = 'auth.html';
+    return;
+  }
+  document.getElementById('userName').textContent = currentUser.name || currentUser.username;
+}
+
+function logout() {
+  localStorage.removeItem('cf_loggedInUser');
+  window.location.href = 'index.html';
+}
+
+function loadEvents() {
+  const container = document.getElementById('eventsContainer');
+  container.innerHTML = "";
+  EVENTS.forEach(ev => {
+    const div = document.createElement('div');
+    div.className = 'event-item';
+    div.onclick = () => showEventDetails(ev.id);
+    div.innerHTML = `
+      <div class="event-title">${ev.title}</div>
+      <div class="event-meta">
+        <span class="chip">${ev.category}</span>
+        <span>Prize: ${ev.prizePool}</span>
+        <span>Deadline: ${ev.deadline}</span>
+      </div>
+      <div style="font-size:0.82rem;color:#6b7280;margin-top:0.25rem;">
+        ${ev.summary}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function loadApplications() {
+  const list = document.getElementById('myApplications');
+  const apps = getApplications().filter(a => a.username === currentUser.username);
+  if (apps.length === 0) {
+    list.innerHTML = "<li>No applications yet.</li>";
+    return;
+  }
+  list.innerHTML = "";
+  apps.forEach(a => {
+    const ev = EVENTS.find(e => e.id === a.eventId);
+    const li = document.createElement('li');
+    li.textContent = `${ev ? ev.title : 'Event ' + a.eventId} – Applied on ${new Date(a.appliedAt).toLocaleString()}`;
+    list.appendChild(li);
+  });
+}
+
+function showEventDetails(eventId) {
+  currentEventId = eventId;
+  const details = document.getElementById('detailsBody');
+  const alertBox = document.getElementById('applyAlert');
+  alertBox.textContent = "";
+  alertBox.className = "alert";
+
+  const ev = EVENTS.find(e => e.id === eventId);
+  if (!ev) {
+    details.innerHTML = "Unable to load event details.";
+    return;
+  }
+  const proceduresHTML = ev.procedures.map(p => `<li>${p}</li>`).join("");
+  details.innerHTML = `
+      <h3>${ev.title}</h3>
+      <p style="margin-top:0.3rem;">${ev.summary}</p>
+      <h3>Prize Pool</h3>
+      <p>${ev.prizePool}</p>
+      <h3>Important Dates</h3>
+      <p>Application Deadline: ${ev.deadline}</p>
+      <h3>Full Brochure</h3>
+      <p>${ev.details}</p>
+      <h3>Procedures</h3>
+      <ul>${proceduresHTML}</ul>
+      <button class="btn-apply" onclick="applyForCurrent()">Apply for this event</button>
+  `;
+}
+
+function applyForCurrent() {
+  const alertBox = document.getElementById('applyAlert');
+  alertBox.textContent = "";
+  alertBox.className = "alert";
+  if (!currentEventId) {
+    alertBox.textContent = "Please select an event first.";
+    alertBox.classList.add('alert-error');
+    return;
+  }
+  let apps = getApplications();
+  const exists = apps.find(a => a.username === currentUser.username && a.eventId === currentEventId);
+  if (exists) {
+    alertBox.textContent = "You have already applied for this event.";
+    alertBox.classList.add('alert-success');
+    return;
+  }
+  apps.push({
+    username: currentUser.username,
+    eventId: currentEventId,
+    appliedAt: new Date().toISOString()
+  });
+  saveApplications(apps);
+  alertBox.textContent = "Application submitted successfully.";
+  alertBox.classList.add('alert-success');
+  loadApplications();
+}
+
+function bootstrap() {
+  ensureAuthenticated();
+  loadEvents();
+  loadApplications();
+}
+
+bootstrap();
+</script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudFest – Admin Panel</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:#f5f7fb;
+  color:#111827;
+  min-height:100vh;
+}
+header{
+  background:#111827;
+  color:#f9fafb;
+  padding:0.7rem 1.5rem;
+}
+.header-inner{
+  max-width:1100px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.brand{
+  font-weight:600;
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+  font-size:0.9rem;
+}
+.badge-admin{
+  padding:0.15rem 0.6rem;
+  border-radius:999px;
+  background:#f97316;
+  color:#111827;
+  font-size:0.75rem;
+}
+.btn-ghost{
+  border-radius:999px;
+  border:1px solid #9ca3af;
+  padding:0.25rem 0.8rem;
+  background:#111827;
+  color:#e5e7eb;
+  cursor:pointer;
+  font-size:0.8rem;
+}
+.btn-ghost:hover{background:#1f2937;}
+
+main{
+  max-width:1100px;
+  margin:0 auto;
+  padding:1.5rem;
+}
+h1{
+  font-size:1.5rem;
+  margin-bottom:0.3rem;
+}
+.subtitle{
+  font-size:0.92rem;
+  color:#6b7280;
+  margin-bottom:1.3rem;
+}
+.panel{
+  background:#ffffff;
+  border-radius:18px;
+  border:1px solid #dde3f5;
+  padding:1.2rem 1.3rem;
+  box-shadow:0 16px 34px rgba(15,35,65,0.06);
+}
+.table-wrapper{
+  overflow-x:auto;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:0.85rem;
+}
+th, td{
+  border-bottom:1px solid #e5e7eb;
+  padding:0.55rem 0.5rem;
+  text-align:left;
+}
+th{
+  background:#f3f4ff;
+  font-weight:600;
+  color:#1f2937;
+}
+tbody tr:nth-child(even){
+  background:#f9fafb;
+}
+.empty{
+  font-size:0.9rem;
+  color:#6b7280;
+  padding:0.5rem 0;
+}
+.badge-event{
+  padding:0.1rem 0.4rem;
+  border-radius:999px;
+  background:#e0f2fe;
+  color:#0369a1;
+  font-size:0.75rem;
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">CloudFest · Admin Panel</div>
+    <div style="display:flex;align-items:center;gap:0.6rem;">
+      <span class="badge-admin">Admin</span>
+      <button class="btn-ghost" onclick="adminLogout()">Logout</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <h1>Student Applications</h1>
+  <p class="subtitle">
+    This view is only accessible through the hidden admin login on the auth page.
+    Data is read from the same localStorage used by the student portal.
+  </p>
+
+  <div class="panel">
+    <div class="table-wrapper" id="tableWrapper">
+      <!-- Filled via JS -->
+    </div>
+  </div>
+</main>
+
+<script>
+// guard: only allow if admin flag set
+function isAdminLoggedIn() {
+  return localStorage.getItem('cf_adminLoggedIn') === 'true';
+}
+function adminLogout() {
+  localStorage.removeItem('cf_adminLoggedIn');
+  window.location.href = 'index.html';
+}
+
+if (!isAdminLoggedIn()) {
+  // simple guard
+  window.location.href = 'auth.html';
+}
+
+// read data
+function getUsers() {
+  return JSON.parse(localStorage.getItem('cf_users') || '[]');
+}
+function getApplications() {
+  return JSON.parse(localStorage.getItem('cf_applications') || '[]');
+}
+
+const EVENTS = [
+  {
+    id: 101,
+    title: "AI Hackathon 2026"
+  },
+  {
+    id: 102,
+    title: "Business Plan Challenge"
+  },
+  {
+    id: 103,
+    title: "Coding Sprint"
+  }
+];
+
+function renderTable() {
+  const wrapper = document.getElementById('tableWrapper');
+  const users = getUsers();
+  const apps = getApplications();
+
+  if (users.length === 0) {
+    wrapper.innerHTML = '<div class="empty">No students registered yet.</div>';
+    return;
+  }
+
+  // join users and applications
+  const rows = [];
+  users.forEach(u => {
+    const userApps = apps.filter(a => a.username === u.username);
+    if (userApps.length === 0) {
+      rows.push({
+        name: u.name || '-',
+        username: u.username,
+        eventTitle: '—',
+        appliedAt: '—'
+      });
+    } else {
+      userApps.forEach(a => {
+        const ev = EVENTS.find(e => e.id === a.eventId);
+        rows.push({
+          name: u.name || '-',
+          username: u.username,
+          eventTitle: ev ? ev.title : ('Event ' + a.eventId),
+          appliedAt: new Date(a.appliedAt).toLocaleString()
+        });
+      });
+    }
+  });
+
+  if (rows.length === 0) {
+    wrapper.innerHTML = '<div class="empty">Students exist but no applications yet.</div>';
+    return;
+  }
+
+  let html = `
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Student Name</th>
+          <th>Username</th>
+          <th>Event</th>
+          <th>Applied At</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  rows.forEach((r, idx) => {
+    html += `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${r.name}</td>
+        <td>${r.username}</td>
+        <td><span class="badge-event">${r.eventTitle}</span></td>
+        <td>${r.appliedAt}</td>
+      </tr>
+    `;
+  });
+  html += `
+      </tbody>
+    </table>
+  `;
+  wrapper.innerHTML = html;
+}
+
+renderTable();
+</script>
+</body>
+</html>
